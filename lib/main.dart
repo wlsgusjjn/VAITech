@@ -99,21 +99,27 @@ class _MyHomePageState extends State<MyHomePage> {
 
   /// Get ready for loading the model
   Future<void> initModels() async {
-    await initTts();
-    await Permission.manageExternalStorage.request();
-    final storagePermissionStatus = await Permission.manageExternalStorage.status;
-    if (storagePermissionStatus.isDenied) {
-      _text = "External file access permission not granted, so the model cannot be used. The app will now close.";
+    try {
+      await initTts();
+      await Permission.manageExternalStorage.request();
+      final storagePermissionStatus = await Permission.manageExternalStorage.status;
+      if (storagePermissionStatus.isDenied) {
+        _text = "External file access permission not granted, so the model cannot be used. The app will now close.";
+        await appClose();
+      }
+      await _stt.hasPermission();
+      final microphonePermissionStatus = await Permission.microphone.status;
+      if (microphonePermissionStatus.isDenied) {
+        _text = "Microphone recording permission not granted, so the model cannot be used. The app will now close.";
+        await appClose();
+      }
+      await loadModel();
+      await initStt();
+    }
+    catch (e) {
+      _text = "An error occurred during model setup. The app will now close.";
       await appClose();
     }
-    await _stt.hasPermission();
-    final microphonePermissionStatus = await Permission.microphone.status;
-    if (microphonePermissionStatus.isDenied) {
-      _text = "Microphone recording permission not granted, so the model cannot be used. The app will now close.";
-      await appClose();
-    }
-    await loadModel();
-    await initStt();
     if (inferenceModel == null) {
       _text = "An error occurred during model setup. The app will now close.";
       await appClose();
@@ -147,20 +153,13 @@ class _MyHomePageState extends State<MyHomePage> {
       maxNumImages: 1, // Optional, maximum number of images per message
     );
 
-    if (inferenceModel == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Model not initialized."),
-      ));
-    }
-    else{
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Model initialized."),
-      ));
-      setState(() {
-        modelLoad = true;
-      });
-      _initCamera();
-    }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text("Model initialized."),
+    ));
+    setState(() {
+      modelLoad = true;
+    });
+    _initCamera();
   }
 
   /// Initialize STT
@@ -239,6 +238,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  /// Initialize Camera
   Future<void> _initCamera() async {
     final cameras = await availableCameras();
     final back = cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.back);
@@ -254,6 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {});
   }
 
+  /// Inference
   Future<void> _runModel(bool textOnly) async {
     if (inferenceModel == null || _text.isEmpty || (!textOnly && imageBytes == null)) {
       setState(() {
@@ -315,6 +316,7 @@ class _MyHomePageState extends State<MyHomePage> {
     streaming = false;
   }
 
+  /// Convert camera image stream to Uint8List for Gemma-3n input
   Future<Uint8List> convertCameraImageToJpeg(CameraImage image) async {
     final int width = image.width;
     final int height = image.height;
@@ -394,9 +396,20 @@ class _MyHomePageState extends State<MyHomePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Text(
-                  modelLoad? "Model is ready" : "Model not found",
+                  loadComplete? "Model is ready" : "",
                 ),
-                Container(
+                _isProcessing ? Center(
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage("assets/images/loading.gif"),
+                        fit: BoxFit.fitWidth,
+                      ),
+                    ),
+                  ),
+                ) : Container(
                   width: size.width * 0.7,
                   height: size.height * 0.5,
                   child: lastImageBytes != null ? Image.memory(

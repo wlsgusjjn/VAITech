@@ -395,6 +395,10 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
+                Container(
+                  width: size.width,
+                  height: 50,
+                ),
                 Text(
                   loadComplete? "Model is ready" : "",
                 ),
@@ -424,8 +428,16 @@ class _MyHomePageState extends State<MyHomePage> {
                       Text(
                         loadComplete? _text : "",
                       ),
-                      Text(
-                        loadComplete? answer : "",
+                      Container(
+                        height: 30,
+                      ),
+                      Container(
+                        height: 100, // Container의 높이를 제한
+                        child: SingleChildScrollView(
+                          child: Text(
+                            loadComplete? answer : "",
+                          ),
+                        ),
                       ),
                     ],
                   ),

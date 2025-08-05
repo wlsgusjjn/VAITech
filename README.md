@@ -6,6 +6,7 @@ VAITech is a Flutter-based mobile application that assists visually impaired use
 
 ## 📺 Submission Video
 
+[![VAITech Video](./assets/images/video_screenshot.png)](https://www.youtube.com/watch?v=8IulKMm7VQU)
 
 
 ---
@@ -95,8 +96,6 @@ flutter run -d android
 <img src="./assets/images/Architecture.png" width="800"/>
 
 - flutter_gemma loads .task model with LiteRT runtime
-
-- record package for streaming audio input
 
 - camera plugin for real-time image capture
 
